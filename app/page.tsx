@@ -1,12 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  const [currentSong, setCurrentSong] = useState("No Song Playing");
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const playlists = [
     {
@@ -31,7 +28,13 @@ export default function Home() {
     },
   ];
 
-  const playTrack = async (song: string, title: string) => {
+  const [currentSong, setCurrentSong] = useState("No Song Playing");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const playSong = async (song: string, title: string, index: number) => {
     if (!audioRef.current) return;
 
     audioRef.current.src = song;
@@ -39,23 +42,70 @@ export default function Home() {
     try {
       await audioRef.current.play();
       setCurrentSong(title);
+      setCurrentIndex(index);
       setIsPlaying(true);
     } catch (error) {
       console.error(error);
     }
   };
 
+  const nextSong = () => {
+    const nextIndex = (currentIndex + 1) % playlists.length;
+
+    playSong(
+      playlists[nextIndex].song,
+      playlists[nextIndex].title,
+      nextIndex
+    );
+  };
+
+  const previousSong = () => {
+    const prevIndex =
+      currentIndex === 0
+        ? playlists.length - 1
+        : currentIndex - 1;
+
+    playSong(
+      playlists[prevIndex].song,
+      playlists[prevIndex].title,
+      prevIndex
+    );
+  };
+
   const togglePlayPause = () => {
     if (!audioRef.current) return;
 
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
+    if (audioRef.current.paused) {
       audioRef.current.play();
       setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
+    if (!audio) return;
+
+    const updateTime = () => {
+      setCurrentTime(audio.currentTime);
+      setDuration(audio.duration || 0);
+    };
+
+    const handleEnded = () => {
+      nextSong();
+    };
+
+    audio.addEventListener("timeupdate", updateTime);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("timeupdate", updateTime);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  });
 
   return (
     <>
@@ -87,11 +137,11 @@ export default function Home() {
 
             <button
               onClick={() =>
-                playTrack("/songs/demo.mp3", "Demo Song")
+                playSong("/songs/demo.mp3", "Top Hits", 0)
               }
               className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
             >
-              Play Featured Song
+              Start Listening
             </button>
           </div>
 
@@ -119,7 +169,7 @@ export default function Home() {
 
                 <button
                   onClick={() =>
-                    playTrack(item.song, item.title)
+                    playSong(item.song, item.title, index)
                   }
                   className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
                 >
@@ -135,23 +185,40 @@ export default function Home() {
         <div>
           <p className="font-bold">{currentSong}</p>
           <p className="text-sm text-gray-400">
-            {currentSong === "No Song Playing"
-              ? "Select a track"
-              : "Now Playing"}
+            {isPlaying ? "Now Playing" : "Paused"}
           </p>
         </div>
 
         <div className="flex gap-4 text-2xl">
-          <button>⏮️</button>
+          <button onClick={previousSong}>⏮️</button>
 
           <button onClick={togglePlayPause}>
             {isPlaying ? "⏸️" : "▶️"}
           </button>
 
-          <button>⏭️</button>
+          <button onClick={nextSong}>⏭️</button>
         </div>
 
-        <input type="range" className="w-40" />
+        <div className="flex flex-col items-center">
+          <input
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={(e) => {
+              if (audioRef.current) {
+                audioRef.current.currentTime = Number(
+                  e.target.value
+                );
+              }
+            }}
+            className="w-40"
+          />
+
+          <p className="text-xs mt-1">
+            {Math.floor(currentTime)}s / {Math.floor(duration)}s
+          </p>
+        </div>
       </div>
 
       <audio ref={audioRef} />
