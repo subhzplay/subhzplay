@@ -3,41 +3,59 @@
 import { useRef, useState } from "react";
 
 export default function Home() {
-  const [currentSong, setCurrentSong] = useState("No Song Playing");
-  const [currentSongPath, setCurrentSongPath] = useState("/songs/demo.mp3");
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const playSong = async () => {
-  if (!audioRef.current) return;
-
-  audioRef.current.src = "/songs/demo.mp3";
-  await audioRef.current.play();
-
-  setCurrentSong("Demo Song");
-};
+  const [currentSong, setCurrentSong] = useState("No Song Playing");
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const playlists = [
-  {
-    title: "Top Hits",
-    image: "https://picsum.photos/300?1",
-    song: "/songs/demo.mp3",
-  },
-  {
-    title: "Chill Vibes",
-    image: "https://picsum.photos/300?2",
-    song: "/songs/chill.mp3",
-  },
-  {
-    title: "Workout Mix",
-    image: "https://picsum.photos/300?3",
-    song: "/songs/workout.mp3",
-  },
-  {
-    title: "Romantic",
-    image: "https://picsum.photos/300?4",
-    song: "/songs/romantic.mp3",
-  },
-];
+    {
+      title: "Top Hits",
+      image: "https://picsum.photos/300?1",
+      song: "/songs/demo.mp3",
+    },
+    {
+      title: "Chill Vibes",
+      image: "https://picsum.photos/300?2",
+      song: "/songs/chill.mp3",
+    },
+    {
+      title: "Workout Mix",
+      image: "https://picsum.photos/300?3",
+      song: "/songs/workout.mp3",
+    },
+    {
+      title: "Romantic",
+      image: "https://picsum.photos/300?4",
+      song: "/songs/romantic.mp3",
+    },
+  ];
+
+  const playTrack = async (song: string, title: string) => {
+    if (!audioRef.current) return;
+
+    audioRef.current.src = song;
+
+    try {
+      await audioRef.current.play();
+      setCurrentSong(title);
+      setIsPlaying(true);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
 
   return (
     <>
@@ -68,20 +86,15 @@ export default function Home() {
             </p>
 
             <button
-  onClick={() => {
-    if (!audioRef.current) return;
-
-    audioRef.current.src = item.song;
-    audioRef.current.play();
-
-    setCurrentSong(item.title);
-  }}
-  className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
->
-  Play
-</button>
+              onClick={() =>
+                playTrack("/songs/demo.mp3", "Demo Song")
+              }
+              className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
+            >
+              Play Featured Song
+            </button>
           </div>
-          
+
           <div className="mb-8">
             <input
               type="text"
@@ -105,44 +118,42 @@ export default function Home() {
                 <h3 className="font-bold">{item.title}</h3>
 
                 <button
-  onClick={() => {
-  setCurrentSong(item.title);
-  setCurrentSongPath(item.song);
-
-  if (audioRef.current) {
-    audioRef.current.src = item.song;
-    audioRef.current.play();
-  }
-}}
-  className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
->
-  Play
-</button>
+                  onClick={() =>
+                    playTrack(item.song, item.title)
+                  }
+                  className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
+                >
+                  Play
+                </button>
               </div>
             ))}
           </div>
         </section>
       </main>
 
-      {/* Music Player Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#0A192F] border-t border-gray-800 h-20 flex items-center justify-between px-6 text-white">
         <div>
-          {/* Changed this to dynamically show your state variable */}
           <p className="font-bold">{currentSong}</p>
           <p className="text-sm text-gray-400">
-            {currentSong === "No Song Playing" ? "Select a track" : "Now Playing"}
+            {currentSong === "No Song Playing"
+              ? "Select a track"
+              : "Now Playing"}
           </p>
         </div>
 
         <div className="flex gap-4 text-2xl">
           <button>⏮️</button>
-          <button onClick={playSong}>▶️</button>
+
+          <button onClick={togglePlayPause}>
+            {isPlaying ? "⏸️" : "▶️"}
+          </button>
+
           <button>⏭️</button>
         </div>
 
         <input type="range" className="w-40" />
       </div>
-      
+
       <audio ref={audioRef} />
     </>
   );
