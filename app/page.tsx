@@ -4,32 +4,40 @@ import { useRef, useState } from "react";
 
 export default function Home() {
   const [currentSong, setCurrentSong] = useState("No Song Playing");
+  const [currentSongPath, setCurrentSongPath] = useState("/songs/demo.mp3");
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Combined into a single playSong function
-  const playSong = () => {
-    setCurrentSong("Demo Song");
-    audioRef.current?.play();
-  };
+  const playSong = async () => {
+  if (!audioRef.current) return;
+
+  audioRef.current.src = "/songs/demo.mp3";
+  await audioRef.current.play();
+
+  setCurrentSong("Demo Song");
+};
 
   const playlists = [
-    {
-      title: "Top Hits",
-      image: "https://picsum.photos/300?1",
-    },
-    {
-      title: "Chill Vibes",
-      image: "https://picsum.photos/300?2",
-    },
-    {
-      title: "Workout Mix",
-      image: "https://picsum.photos/300?3",
-    },
-    {
-      title: "Romantic",
-      image: "https://picsum.photos/300?4",
-    },
-  ];
+  {
+    title: "Top Hits",
+    image: "https://picsum.photos/300?1",
+    song: "/songs/demo.mp3",
+  },
+  {
+    title: "Chill Vibes",
+    image: "https://picsum.photos/300?2",
+    song: "/songs/chill.mp3",
+  },
+  {
+    title: "Workout Mix",
+    image: "https://picsum.photos/300?3",
+    song: "/songs/workout.mp3",
+  },
+  {
+    title: "Romantic",
+    image: "https://picsum.photos/300?4",
+    song: "/songs/romantic.mp3",
+  },
+];
 
   return (
     <>
@@ -60,11 +68,18 @@ export default function Home() {
             </p>
 
             <button
-              onClick={playSong}
-              className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
-            >
-              Play
-            </button>
+  onClick={() => {
+    if (!audioRef.current) return;
+
+    audioRef.current.src = item.song;
+    audioRef.current.play();
+
+    setCurrentSong(item.title);
+  }}
+  className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
+>
+  Play
+</button>
           </div>
           
           <div className="mb-8">
@@ -89,9 +104,20 @@ export default function Home() {
 
                 <h3 className="font-bold">{item.title}</h3>
 
-                <button onClick={playSong} className="mt-4 bg-blue-600 px-4 py-2 rounded-lg">
-                  Play
-                </button>
+                <button
+  onClick={() => {
+  setCurrentSong(item.title);
+  setCurrentSongPath(item.song);
+
+  if (audioRef.current) {
+    audioRef.current.src = item.song;
+    audioRef.current.play();
+  }
+}}
+  className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
+>
+  Play
+</button>
               </div>
             ))}
           </div>
@@ -117,9 +143,7 @@ export default function Home() {
         <input type="range" className="w-40" />
       </div>
       
-      <audio ref={audioRef}>
-        <source src="/songs/demo.mp3" type="audio/mpeg" />
-      </audio>
+      <audio ref={audioRef} />
     </>
   );
 }
